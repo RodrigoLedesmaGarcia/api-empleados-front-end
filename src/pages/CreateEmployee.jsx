@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/api";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const initialEmployee = {
   firstName: "",
@@ -13,11 +14,19 @@ const initialEmployee = {
 };
 
 function CreateEmployee() {
+
+  const cerrarSesion = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const navigate = useNavigate();
   const [employee, setEmployee] = useState(initialEmployee);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
+  
 
   useEffect(() => {
     const handleOffline = () => setOnline(false);
@@ -55,17 +64,17 @@ function CreateEmployee() {
 
     try {
       const payload = {
-        ...employee,
-        toDate: employee.toDate || null,
+        firstName: employee.firstName.trim(),
+        lastName: employee.lastName.trim(),
+        birthDate: employee.birthDate || null,
+        hireDate: employee.hireDate || null,
+        gender: employee.gender,
+        deptNo: employee.deptNo || null,
+        fromDate: employee.fromDate || null,
+        toDate: employee.toDate || "9999-01-01",
       };
 
-      const response = await axios.post(
-        "http://localhost:8081/employee/nuevo",
-        payload,
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await api.post("/employee/nuevo", payload);
 
       setSuccess(response.data.message || "Empleado creado correctamente");
       setShowSuccessModal(true);
@@ -93,9 +102,14 @@ function CreateEmployee() {
           <div className="flex items-center gap-4">
             <span className="text-sm">👤 Usuario</span>
 
-            <button className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900">
-              Cerrar sesión
-            </button>
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900"
+          >
+            Cerrar sesión
+          </button>
+          
           </div>
         </div>
       </nav>
@@ -242,6 +256,7 @@ function CreateEmployee() {
 
                 <button
                   type="button"
+                  onClick={() => navigate("/employee")}
                   className="bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-500"
                 >
                   Volver al Inicio

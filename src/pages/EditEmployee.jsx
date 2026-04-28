@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-function EditEmployee({ empNo }) {
 
-   const [employee, setEmployee] = useState({
+  function EditEmployee() {
+  const { empNo } = useParams();
+  const navigate = useNavigate();
+
+    const cerrarSesion = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const [employee, setEmployee] = useState({
     empNo: "",
     firstName: "",
     lastName: "",
@@ -16,13 +24,14 @@ function EditEmployee({ empNo }) {
     toDate: "",
   });
 
-
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [online, setOnline] = useState(navigator.onLine);
 
-  useEffect(() => {
-    cargarEmpleado();
+    useEffect(() => {
+    if (empNo) {
+      cargarEmpleado();
+    }
 
     const handleOffline = () => setOnline(false);
     const handleOnline = () => setOnline(true);
@@ -34,21 +43,25 @@ function EditEmployee({ empNo }) {
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("online", handleOnline);
     };
-  }, []);
+  }, [empNo]);
 
   const cargarEmpleado = async () => {
     try {
       const response = await axios.get(
         `http://localhost:8081/employee/editar/${empNo}`,
         {
-          withCredentials: true,
+          //withCredentials: true,
         }
       );
 
       setEmployee(response.data);
     } catch (err) {
-      setError("No se pudo cargar el empleado");
-    }
+  console.error("Error cargando empleado:", err);
+  console.error("Status:", err.response?.status);
+  console.error("Data:", err.response?.data);
+
+  setError("No se pudo cargar el empleado");
+}
   };
 
   const handleChange = (e) => {
@@ -60,26 +73,42 @@ function EditEmployee({ empNo }) {
     });
   };
 
-  const guardarCambios = async (e) => {
-    e.preventDefault();
+  
+   const guardarCambios = async (e) => {
+  e.preventDefault();
 
-    setError("");
-    setMensaje("");
+  setError("");
+  setMensaje("");
 
-    try {
-      const response = await axios.put(
-        "http://localhost:8081/employee/editar",
-        employee,
-        {
-          withCredentials: true,
-        }
-      );
+  const token = localStorage.getItem("token");
 
-      setMensaje(response.data.message || "Empleado editado correctamente ✅");
-    } catch (err) {
+  try {
+    const response = await axios.put(
+      "http://localhost:8081/employee/editar",
+      employee,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    setMensaje(response.data.message || "Empleado editado correctamente ");
+  } catch (err) {
+    console.error("Status:", err.response?.status);
+    console.error("Data:", err.response?.data);
+
+    if (err.response?.status === 401) {
+      setError("No autorizado. Inicia sesión nuevamente.");
+    } else if (err.response?.status === 403) {
+      setError("No tienes permisos de administrador para editar.");
+    } else {
       setError("No se pudo editar el empleado");
     }
-  };
+  }
+
+};
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -99,21 +128,26 @@ function EditEmployee({ empNo }) {
           <div className="flex items-center gap-4">
             <span className="text-sm">👤 Usuario</span>
 
-            <button className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900">
-              Cerrar sesión
-            </button>
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900"
+          >
+            Cerrar sesión
+          </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-6xl mx-auto p-6">
         <div className="bg-white rounded-xl shadow p-6">
-          <button
-            type="button"
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-          >
-            Regresar al inicio
-          </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/employee")}
+                  className="bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-500"
+                >
+                  Volver al Inicio
+                </button>
 
           <hr className="my-6" />
 
@@ -225,14 +259,13 @@ function EditEmployee({ empNo }) {
               >
                 Guardar cambios
               </button>
-
-              <button
-                type="button"
-                onClick={cargarEmpleado}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-              >
-                Cancelar
-              </button>
+                              <button
+                  type="button"
+                  onClick={() => navigate("/employee")}
+                  className="bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-500"
+                >
+                  Volver al Inicio
+                </button>
             </div>
           </form>
         </div>

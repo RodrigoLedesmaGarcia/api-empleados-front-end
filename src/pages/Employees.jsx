@@ -2,7 +2,16 @@ import { useEffect, useState } from "react";
 import { buscarEmpleados, eliminarEmpleado } from "../api/employeeApi";
 import { useNavigate } from "react-router-dom";
 
+
 function Employees() {
+
+
+   const cerrarSesion = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+
   const [filters, setFilters] = useState({
     empNo: "",
     firstName: "",
@@ -145,9 +154,14 @@ function Employees() {
           <div className="flex items-center gap-4">
             <span className="text-sm">👤 {username}</span>
 
-            <button className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900">
-              Cerrar sesión
-            </button>
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            className="border border-white rounded-md px-3 py-1 text-sm hover:bg-white hover:text-gray-900"
+          >
+            Cerrar sesión
+          </button>
+
           </div>
         </div>
       </nav>
@@ -258,38 +272,64 @@ function Employees() {
                     <Th>Departamento</Th>
                     <Th>From</Th>
                     <Th>To</Th>
+                    <th>Estado</th>
                     <Th>Acciones</Th>
+                  
                   </tr>
                 </thead>
 
                 <tbody>
-                  {results.content?.map((item) => (
-                    <tr key={item.empNo} className="border-b hover:bg-gray-50">
+                  {results.content?.map((item) => {
+                  const dadoDeBaja = !item.deptNo;
+
+                  return (
+                    <tr
+                      key={item.empNo}
+                      className={`border-b hover:bg-gray-50 ${
+                        dadoDeBaja ? "bg-red-100 text-red-700 line-through" : ""
+                      }`}
+                    >
                       <Td>{item.empNo}</Td>
                       <Td>{item.firstName}</Td>
                       <Td>{item.lastName}</Td>
                       <Td>{item.gender}</Td>
                       <Td>{item.birthDate}</Td>
                       <Td>{item.hireDate}</Td>
-                      <Td>{item.deptNo}</Td>
-                      <Td>{item.fromDate}</Td>
-                      <Td>{item.toDate}</Td>
+                      <Td>{item.deptNo || "-"}</Td>
+                      <Td>{item.fromDate || "-"}</Td>
+                      <Td>{item.toDate || "-"}</Td>
+
                       <Td>
-                        <div className="flex justify-center gap-2">
-                          <button className="bg-yellow-400 px-3 py-1 rounded text-sm">
+                        {dadoDeBaja ? (
+                          <span className="font-bold text-red-700 no-underline">
+                            DADO DE BAJA
+                          </span>
+                        ) : (
+                          <span className="font-bold text-green-700 no-underline">
+                            ACTIVO
+                          </span>
+                        )}
+                      </Td>
+
+                      <Td>
+                        <div className="flex justify-center gap-2 no-underline">
+                          <button
+                            onClick={() => navigate(`/employee/edit/${item.empNo}`)}
+                            className="bg-yellow-400 px-3 py-1 rounded text-sm text-black"
+                          >
                             Editar
                           </button>
-
                           <button
                             onClick={() => handleEliminar(item.empNo)}
-                            className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                            className="bg-red-600 text-white px-3 py-1 rounded text-sm no-underline"
                           >
                             Eliminar
                           </button>
                         </div>
                       </Td>
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>

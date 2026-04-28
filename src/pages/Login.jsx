@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -14,32 +14,44 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const cleanUsername = username.trim();
+
+    if (!cleanUsername || !password) {
+      setError("Ingrese usuario y contraseña");
+      return;
+    }
+
     setError("");
     setSuccess("");
     setLoading(true);
 
     try {
-      await axios.post(
-        "http://localhost:8081/auth/login",
-        {
-          username,
-          password,
-        },
-        {
-          withCredentials: true, // 🔴 CRÍTICO para sesión
-        }
-      );
+      const response = await api.post("/auth/login", {
+        username: cleanUsername,
+        password,
+      });
+
+      const token = response.data?.token;
+
+      if (!token) {
+        throw new Error("El backend no devolvió token");
+      }
+
+      localStorage.setItem("token", token);
 
       setSuccess("Login correcto");
 
-      // pequeña pausa UX
-      setTimeout(() => {
-        navigate("/employees");
-      }, 600);
-
+      navigate("/employee", { replace: true });
     } catch (err) {
-      console.error(err.response?.status, err.response?.data);
-      setError("Usuario o contraseña incorrectos");
+      console.error(err.response?.status, err.response?.data || err.message);
+
+      localStorage.removeItem("token");
+
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError("Usuario o contraseña incorrectos");
+      } else {
+        setError("No se pudo iniciar sesión. Verifique el servidor.");
+      }
     } finally {
       setLoading(false);
     }
@@ -86,8 +98,11 @@ function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
                 required
-                className="w-full rounded-xl px-4 py-3 bg-white/20 border border-white/30 text-white outline-none"
+                autoComplete="username"
+                className="w-full rounded-xl px-4 py-3 bg-white/20 border border-white/30 text-white outline-none placeholder:text-gray-300 disabled:opacity-60"
+                placeholder="Ingrese su usuario"
               />
             </div>
 
@@ -99,8 +114,11 @@ function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 required
-                className="w-full rounded-xl px-4 py-3 bg-white/20 border border-white/30 text-white outline-none"
+                autoComplete="current-password"
+                className="w-full rounded-xl px-4 py-3 bg-white/20 border border-white/30 text-white outline-none placeholder:text-gray-300 disabled:opacity-60"
+                placeholder="Ingrese su contraseña"
               />
             </div>
 
