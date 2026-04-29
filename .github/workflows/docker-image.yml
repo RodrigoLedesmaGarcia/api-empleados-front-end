@@ -10,13 +10,18 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-      packages: write  # Required for GHCR
+      packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Set lowercase image name
+        run: |
+          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}/react-app:latest" >> $GITHUB_ENV
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
@@ -26,7 +31,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker
-        run: docker build -t ghcr.io/${{ github.repository }}/react-app:latest .
+        run: docker build -t $IMAGE_NAME .
 
       - name: Push Docker
-        run: docker push ghcr.io/${{ github.repository }}/react-app:latest
+        run: docker push $IMAGE_NAME
