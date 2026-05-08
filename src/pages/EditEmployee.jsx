@@ -45,24 +45,34 @@ import { useParams, useNavigate } from "react-router-dom";
     };
   }, [empNo]);
 
-  const cargarEmpleado = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8081/employee/editar/${empNo}`,
-        {
-          //withCredentials: true,
-        }
-      );
+ const cargarEmpleado = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
-      setEmployee(response.data);
-    } catch (err) {
-  console.error("Error cargando empleado:", err);
-  console.error("Status:", err.response?.status);
-  console.error("Data:", err.response?.data);
+    const response = await axios.get(
+      `http://localhost:8081/employee/editar/${empNo}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-  setError("No se pudo cargar el empleado");
-}
-  };
+    setEmployee(response.data);
+  } catch (err) {
+    console.error("Error cargando empleado:", err);
+    console.error("Status:", err.response?.status);
+    console.error("Data:", err.response?.data);
+
+    if (err.response?.status === 401) {
+      setError("No autorizado. Inicia sesión nuevamente.");
+    } else if (err.response?.status === 403) {
+      setError("No tienes permisos para cargar este empleado.");
+    } else {
+      setError("No se pudo cargar el empleado");
+    }
+  }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
